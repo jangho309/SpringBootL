@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{/layouts/layout1}">
+<head>
+    <th:block layout:fragment="script">
+        <script>
+            $(() => {
+                if($("#loginFailMsg").val() !== "") {
+                    if ($("#loginFailMsg").val() === "id not exist") {
+                        alert("존재하지 않는 아이디입니다.");
+                    } else if ($("#loginFailMsg").val() === "wrong password") {
+                        alert("잘못된 비밀번호입니다.");
+                    } else {
+                        alert("알 수 없는 에러 발생. 관리자에게 문의하세요.");
+                    }
+                }
+            });
+        </script>
+    </th:block>
+</head>
+<body>
+    <main layout:fragment="content">
+        <div class="container mt-5 w-25">
+            <h4>로그인</h4>
+        </div>
+        <div class="container mt-4 mb-5 w-25">
+            <form id="login-form" action="/member/login" method="post">
+                <input type="hidden" name="loginFailMsg"
+                       id="loginFailMsg" th:value="${loginFailMsg}">
+                <div class="form-group">
+                    <label for="username">아이디</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                </div>
+                <div class="form-group mt-4">
+                    <label for="password">비밀번호</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <div class="form-group mt-4">
+                    <button type="submit" class="btn btn-outline-secondary w-100">로그인</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
