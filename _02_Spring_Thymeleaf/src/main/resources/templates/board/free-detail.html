@@ -11,16 +11,16 @@
             const changeFiles = [];
 
             $(() => {
-               for(let i = 0; i < $("#filecnt").val(); i++){
-                   const originFileObj = {
-                       board_id: $("#id").val(),
-                       id: $("#fileId" + i).val(),
-                       filename: $("#filename" + i).val(),
-                       filestatus: "N"
-                   };
+                for(let i = 0; i < $("#filecnt").val(); i++) {
+                    const originFileObj = {
+                        board_id: $("#id").val(),
+                        id: $("#fileId" + i).val(),
+                        filename: $("#filename" + i).val(),
+                        filestatus: "N"
+                    };
 
-                   originFiles.push(originFileObj);
-               }
+                    originFiles.push(originFileObj);
+                }
 
                 $("#uploadFiles").on("change", (e) => {
                     const files = e.target.files;
@@ -32,49 +32,70 @@
                     }
                 });
 
-               $("#modify-form").on("submit", (e) => {
-                  e.preventDefault();
+                $("#modify-form").on("submit", (e) => {
+                   e.preventDefault();
 
-                  $("#regdate").val(`${$("#regdate").val()}T00:00:00`);
-                   $("#moddate").val(`${$("#moddate").val()}T00:00:00`);
+                   // $("#regdate").val(`${$("#regdate").val()}T00:00:00`);
+                   // $("#moddate").val(`${$("#moddate").val()}T00:00:00`);
 
+                   let dataTransfer1 = new DataTransfer();
+                   let dataTransfer2 = new DataTransfer();
 
-                  let dataTransfer1 = new DataTransfer();
-                  let dataTransfer2 = new DataTransfer();
+                   for(i in uploadFiles) {
+                       const file = uploadFiles[i];
+                       dataTransfer1.items.add(file);
+                   }
 
-                  for(i in uploadFiles){
-                      const file = uploadFiles[i];
-                      dataTransfer1.items.add(file);
-                  }
+                   $("#uploadFiles")[0].files = dataTransfer1.files;
 
-                  $("#uploadFiles")[0].files = dataTransfer1.files;
+                   for(i in changeFiles) {
+                       const file = changeFiles[i];
+                       dataTransfer2.items.add(file);
+                   }
 
-                  for(i in changeFiles){
-                      const file = changeFiles[i];
-                      dataTransfer2.items.add(file);
-                  }
+                   $("#changeFiles")[0].files = dataTransfer2.files;
 
-                  $("#changeFiles")[0].files = dataTransfer2.files;
+                   $("#originFiles").val(JSON.stringify(originFiles));
 
-                  $("#originFiles").val(JSON.stringify(originFiles));
+                   const formData = new FormData($("#modify-form")[0]);
 
-                  const formData = new FormData($("#modify-form")[0]);
+                    // FormData에 이미 존재하는 키의 밸류를 변경하려면 set 메소드를 사용
+                    formData.set("regdate", `${$("#regdate").val()}T00:00:00`);
+                    formData.set("moddate", `${$("#moddate").val()}T00:00:00`);
 
-                  $.ajax({
-                     enctype: "multipart/form-data",
-                     url: `/boards/${$("#id").val()}`,
-                     type: "patch",
-                     data: formData,
-                     processData: false,
-                     contentType: false,
-                     success: (obj) => {
-                        console.log(obj);
-                     },
-                     error: (err) => {
-                        console.log(err);
-                     }
-                  });
-               });
+                   $.ajax({
+                       enctype: "multipart/form-data",
+                       url: `/boards/${$("#id").val()}`,
+                       type: "patch",
+                       data: formData,
+                       processData: false,
+                       contentType: false,
+                       success: (obj) => {
+                           // console.log(obj);
+                           if(obj.statusCode === 200) {
+                               alert("정상적으로 수정되었습니다.");
+                               location.href = `/boards/${obj.data.id}?type=free`
+                           }
+                       },
+                       error: (err) => {
+                           console.log(err);
+                       }
+                   });
+                });
+
+                $("#btn-delete").on("click", (e) => {
+                   $.ajax({
+                       url: `/boards/${$("#id").val()}?type=notice`,
+                       type: "delete",
+                       success: (obj) => {
+                           alert("정상적으로 삭제되었습니다.");
+                           location.href = "/boards/notice-list";
+                       },
+                       error: (err) => {
+                           console.log(err);
+                       }
+                   });
+                });
             });
 
             const fileClick = (fileId) => {
@@ -94,7 +115,7 @@
                     const img = document.getElementById("img" + fileId);
                     const p = document.getElementById("filename" + fileId);
 
-                    if(fileArr[0].name.match(/(.*?)\.(jpg|jpeg|png|gif|bmp)$/)){
+                    if(fileArr[0].name.match(/(.*?)\.(jpg|jpeg|png|gif|bmp)$/)) {
                         img.src = event.target.result;
                     } else {
                         img.src = '/images/defaultFileImg.png';
@@ -105,8 +126,8 @@
 
                 reader.readAsDataURL(fileArr[0]);
 
-                for(let i = 0; i < originFiles.length; i++){
-                    if(fileId == originFiles[i].id){
+                for(let i = 0; i < originFiles.length; i++) {
+                    if(fileId == originFiles[i].id) {
                         originFiles[i].filestatus = "U";
                         originFiles[i].newfilename = fileArr[0].name;
                     }
@@ -118,8 +139,8 @@
 
                 const deleteFileId = element.getAttribute("delete-file");
 
-                for(let i = 0; i < originFiles.length; i++){
-                    if(deleteFileId == originFiles[i].id){
+                for(let i = 0; i < originFiles.length; i++) {
+                    if(deleteFileId == originFiles[i].id) {
                         originFiles[i].filestatus = "D";
                     }
                 }
@@ -200,7 +221,6 @@
                 return div;
             }
 
-
         </script>
     </th:block>
 </head>
@@ -210,7 +230,7 @@
             <h4>자유게시글 상세</h4>
         </div>
         <div class="container mt-3 w-50">
-            <form id="modify-form" action="#" method="post">
+            <form id="modify-form" action="#" method="">
                 <input type="hidden" id="id" name="id" th:value="${board.id}">
                 <input type="hidden" id="type" name="type" value="free">
                 <input type="hidden" id="originFiles" name="originFiles">
@@ -253,7 +273,7 @@
                                 <input type="hidden" th:id="'fileId' + ${fileStat.index}" th:value="${file.id}">
                                 <input type="hidden" th:id="'filename' + ${fileStat.index}" th:value="${file.filename}">
                                 <input type="file" th:id="'changeFile' + ${file.id}" th:name="'changeFile' + ${file.id}"
-                                       style="display:none;"
+                                       style="display: none;"
                                        th:onchange="changeFile([[${file.id}]], event)">
                                 <input th:if="${fileStat.last}" type="hidden"
                                        id="filecnt" name="filecnt" th:value="${fileStat.count}">
@@ -269,7 +289,7 @@
                                      class="upload-file"
                                      th:alt="${file.fileoriginname}"
                                      th:onclick="fileClick([[${file.id}]])">
-                                <input type="button" th:value="x"
+                                <input type="button" value="x"
                                        class="upload-file-delete-btn"
                                        th:delete-file="${file.id}"
                                        onclick="deleteFile(event)">
@@ -282,7 +302,7 @@
                 </div>
                 <div class="container mt-3 mb-5 w-50 text-center" th:if="${session.loginMember != null && session.loginMember.id == board.writer_id}">
                     <button type="submit" id="btn-update" class="btn btn-outline-secondary">수정</button>
-                    <button type="button" id="btn-delete" class="btn btn-outline-secondary ml-2" onclick="location.href='/board/deleteBoard.do?boardNo=${getBoard.boardNo}'">삭제</button>
+                    <button type="button" id="btn-delete" class="btn btn-outline-secondary ml-2">삭제</button>
                 </div>
             </form>
         </div>

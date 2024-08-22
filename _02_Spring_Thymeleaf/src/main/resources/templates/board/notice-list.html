@@ -1,97 +1,130 @@
 <!DOCTYPE html>
 <html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{/layouts/layout2}">
+<head>
+    <th:block layout:fragment="script">
+        <script>
+            $(() => {
+                $("#search-icon").on("click", (e) => {
+                   $("input[name='pageNum']").val(1);
+                   $("#search-form").submit();
+                });
+
+                $("input[namge='search']").on("keypress", (e) => {
+                   if(e.key.toLowerCase() === 'enter'){
+                       $("input[name='pageNum']").val(1);
+                   }
+                });
+
+                const zeroDate = (date) => {
+                    return date < 10 ? `0${date}` : date;
+                }
+
+                const makeImg = (file) => {
+                    if(typeof file != 'undefined' && file.filetype === 'image'){
+                        return `<img class="bd-placeholder-img card-img-top" width="100%" height="180"
+                                 src="https://kr.object.ncloudstorage.com/bitcamp-134/notice/${file.filename}"
+                                 alt="${file.fileoriginname}">`;
+                    }
+
+                    return `
+                         <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
+                    `;
+                }
+
+                const localDataTimeToArray = (date) => {
+                    const tempDate = date.split("T")[0];
+
+                    return tempDate.split("-");
+                }
+
+                $(window).on("scroll", (e) => {
+                    const scrollTop = $(window).scrollTop(); // 현재 스크롤의 위치
+                    const windowHeight = window.innerHeight;  // 브라우저의 세로길이(스크롤 길이는 포함되지 않음)
+                    const documentHeight = document.documentElement.scrollHeight; // 웹 문서의 세로 길이(스크롤 길이 포함됨)
+
+                    // console.log("scrollTop : " + scrollTop + ", windowHeight : " + windowHeight + ", documentHeight : " + documentHeight);
+                    const isBottom = documentHeight <= scrollTop + windowHeight;
+
+                    if(isBottom){
+                        if($("input[name='pageNum']").val() >= $("input[name='endPage']").val()){
+                            return;
+                        }
+
+                        $("input[name='pageNum']").val(parseInt($("input[name='pageNum']").val()) + 1);
+
+                        $.ajax({
+                            url: '/boards/notice-list-ajax',
+                            type: 'post',
+                            data : $("#search-form").serialize(),
+                            success: (obj) => {
+                                console.log(obj);
+
+                                let htmlStr = '';
+
+                                for(let i = 0; i < obj.dataList.length; i++){
+                                    htmlStr += `
+                                        <div class="card" style="width: 18rem;">
+                                            ${makeImg(obj.dataList[i].file)}
+                                            <div class="card-body">
+                                                <h5 class="card-title">${obj.dataList[i].notice.title}</h5>
+                                                <p class="card-text">작성일 : ${localDataTimeToArray(obj.dataList[i].notice.regdate)[0]}-${localDataTimeToArray(obj.dataList[i].notice.regdate)[1]}-${localDataTimeToArray(obj.dataList[i].notice.regdate)[2]}</p>
+                                                <a href="/boards/cnt/${obj.dataList[i].notice.id}?type=notice" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+
+                                $(".card-wrapper").append(htmlStr);
+                            },
+                            error: (err) => {
+                               console.log(err);
+                            }
+                        });
+                    }
+                });
+            });
+        </script>
+    </th:block>
+</head>
 <body>
     <main layout:fragment="content">
         <div class="container mt-5 w-75">
             <h4>공지사항</h4>
         </div>
         <div class="container mt-3 mb-5 w-75 card-wrapper">
-            <div class="card" style="width: 18rem;">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
+            <div class="card" style="width: 18rem;"
+                 th:each="notice : ${noticeList}">
+                <img class="bd-placeholder-img card-img-top" width="100%" height="180"
+                     th:if="${#maps.containsKey(notice, 'file') && notice.file.filetype == 'image'}"
+                     th:src="@{'https://kr.object.ncloudstorage.com/bitcamp-134/notice/' + ${notice.file.filename}}"
+                     th:alt="${notice.file.fileoriginname}">
+                <svg th:unless="${#maps.containsKey(notice, 'file') && notice.file.filetype == 'image'}"
+                     class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
                 <div class="card-body">
-                    <h5 class="card-title">공지사항</h5>
-                    <p class="card-text">작성일: 2024-06-26</p>
-                    <a href="notice-detail.html" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
-                </div>
-            </div>
-            <div class="card" style="width: 18rem;">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
-                <div class="card-body">
-                    <h5 class="card-title">공지사항</h5>
-                    <p class="card-text">작성일: 2024-06-26</p>
-                    <a href="notice-detail.html" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
-                </div>
-            </div>
-            <div class="card" style="width: 18rem;">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
-                <div class="card-body">
-                    <h5 class="card-title">공지사항</h5>
-                    <p class="card-text">작성일: 2024-06-26</p>
-                    <a href="notice-detail.html" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
-                </div>
-            </div>
-            <div class="card" style="width: 18rem;">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
-                <div class="card-body">
-                    <h5 class="card-title">공지사항</h5>
-                    <p class="card-text">작성일: 2024-06-26</p>
-                    <a href="notice-detail.html" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
-                </div>
-            </div>
-            <div class="card" style="width: 18rem;">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
-                <div class="card-body">
-                    <h5 class="card-title">공지사항</h5>
-                    <p class="card-text">작성일: 2024-06-26</p>
-                    <a href="notice-detail.html" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
-                </div>
-            </div>
-            <div class="card" style="width: 18rem;">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
-                <div class="card-body">
-                    <h5 class="card-title">공지사항</h5>
-                    <p class="card-text">작성일: 2024-06-26</p>
-                    <a href="notice-detail.html" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
-                </div>
-            </div>
-            <div class="card" style="width: 18rem;">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
-                <div class="card-body">
-                    <h5 class="card-title">공지사항</h5>
-                    <p class="card-text">작성일: 2024-06-26</p>
-                    <a href="notice-detail.html" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
-                </div>
-            </div>
-            <div class="card" style="width: 18rem;">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
-                <div class="card-body">
-                    <h5 class="card-title">공지사항</h5>
-                    <p class="card-text">작성일: 2024-06-26</p>
-                    <a href="notice-detail.html" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
-                </div>
-            </div>
-            <div class="card" style="width: 18rem;">
-                <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
-                <div class="card-body">
-                    <h5 class="card-title">공지사항</h5>
-                    <p class="card-text">작성일: 2024-06-26</p>
-                    <a href="notice-detail.html" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
+                    <h5 class="card-title" th:text="${notice.notice.title}">공지사항</h5>
+                    <p class="card-text" th:text="'작성일: ' + ${#temporals.format(notice.notice.regdate, 'yyyy-MM-dd')}"></p>
+                    <a th:href="@{/boards/cnt/{id}?type=notice (id=${notice.notice.id})}" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
                 </div>
             </div>
         </div>
         <div class="container mt-3 w-50">
-            <form id="searchForm" action="" method="post">
+            <form id="search-form" action="/boards/notice-list" method="get">
+                <input type="hidden" name="pageNum" th:value="${page.cri.pageNum}">
+                <input type="hidden" name="amount" th:value="${page.cri.amount}">
+                <input type="hidden" name="endPage" th:value="${page.endPage}">
                 <div class="row d-flex justify-content-center">
                     <div class="col-6">
                         <div class="row">
                             <div class="col-11">
-                                <input type="text" class="form-control w-100" name="searchKeyword">
+                                <input type="text" class="form-control w-100" name="searchKeyword"
+                                       th:value="${#maps.containsKey(searchMap, 'searchKeyword') ? searchMap.searchKeyword : ''}">
                             </div>
                             <div class="col-1 d-flex align-items-center">
-                                <i class="bi bi-search" id="searchIcon"></i>
-                                <button type="submit" id="btnSearch">검색</button>
+                                <i class="bi bi-search" id="search-icon"></i>
+                                <button type="submit" id="btn-search">검색</button>
                             </div>
                         </div>
                     </div>
@@ -100,7 +133,9 @@
         </div>
 
         <div class="container mt-3 mb-5 w-50 d-flex justify-content-end">
-            <button type="button" class="btn btn-outline-secondary" onclick="location.href='post.html'">글 등록</button>
+            <button type="button" class="btn btn-outline-secondary"
+                    th:if="${session.loginMember != null && session.loginMember.role == 'ADMIN'}"
+                    onclick="location.href='/boards/post'">글 등록</button>
         </div>
     </main>
 </body>

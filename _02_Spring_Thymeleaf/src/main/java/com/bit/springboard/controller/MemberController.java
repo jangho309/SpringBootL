@@ -117,7 +117,7 @@ public class MemberController {
 
         try {
             MemberDto loginMember = memberService.login(memberDto);
-
+            System.out.println("login info : " + loginMember.toString());
             session.setAttribute("loginMember", loginMember);
 
             // "/"로 리다이렉트 시키기
