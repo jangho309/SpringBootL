@@ -4,8 +4,7 @@ import com.bit.springboard.dto.BoardFileDto;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.List;
+import org.hibernate.annotations.DynamicInsert;
 
 @Entity
 @Getter
@@ -41,7 +40,7 @@ public class FreeBoardFile {
 
     private String filetype;
 
-    public BoardFileDto toDto(){
+    public BoardFileDto toDto() {
         return BoardFileDto.builder()
                 .id(this.id)
                 .board_id(this.freeBoard.getId())
@@ -51,5 +50,4 @@ public class FreeBoardFile {
                 .filetype(this.filetype)
                 .build();
     }
-
 }

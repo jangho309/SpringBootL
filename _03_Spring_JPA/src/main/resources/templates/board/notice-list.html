@@ -8,13 +8,13 @@
         <script>
             $(() => {
                 $("#search-icon").on("click", (e) => {
-                   $("input[name='pageNum']").val(1);
+                   $("input[name='page']").val(0);
                    $("#search-form").submit();
                 });
 
                 $("input[namge='search']").on("keypress", (e) => {
                    if(e.key.toLowerCase() === 'enter'){
-                       $("input[name='pageNum']").val(1);
+                       $("input[name='page']").val(0);
                    }
                 });
 
@@ -49,11 +49,11 @@
                     const isBottom = documentHeight <= scrollTop + windowHeight;
 
                     if(isBottom){
-                        if($("input[name='pageNum']").val() >= $("input[name='endPage']").val()){
+                        if($("input[name='page']").val() >= $("input[name='endPage']").val()){
                             return;
                         }
 
-                        $("input[name='pageNum']").val(parseInt($("input[name='pageNum']").val()) + 1);
+                        $("input[name='page']").val(parseInt($("input[name='page']").val()) + 1);
 
                         $.ajax({
                             url: '/boards/notice-list-ajax',
@@ -64,14 +64,14 @@
 
                                 let htmlStr = '';
 
-                                for(let i = 0; i < obj.dataList.length; i++){
+                                for(let i = 0; i < obj.dataPaging.content.length; i++){
                                     htmlStr += `
                                         <div class="card" style="width: 18rem;">
-                                            ${makeImg(obj.dataList[i].file)}
+                                            ${makeImg(obj.dataPaging.content[i].boardFileDtoList[0])}
                                             <div class="card-body">
-                                                <h5 class="card-title">${obj.dataList[i].notice.title}</h5>
-                                                <p class="card-text">작성일 : ${localDataTimeToArray(obj.dataList[i].notice.regdate)[0]}-${localDataTimeToArray(obj.dataList[i].notice.regdate)[1]}-${localDataTimeToArray(obj.dataList[i].notice.regdate)[2]}</p>
-                                                <a href="/boards/cnt/${obj.dataList[i].notice.id}?type=notice" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
+                                                <h5 class="card-title">${obj.dataPaging.content[i].title}</h5>
+                                                <p class="card-text">작성일 : ${localDataTimeToArray(obj.dataPaging.content[i].regdate)[0]}-${localDataTimeToArray(obj.dataPaging.content[i].regdate)[1]}-${localDataTimeToArray(obj.dataPaging.content[i].regdate)[2]}</p>
+                                                <a href="/boards/cnt/${obj.dataPaging.content[i].id}?type=notice" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
                                             </div>
                                         </div>
                                     `;
@@ -96,25 +96,26 @@
         </div>
         <div class="container mt-3 mb-5 w-75 card-wrapper">
             <div class="card" style="width: 18rem;"
-                 th:each="notice : ${noticeList}">
+                 th:each="notice : ${noticeList.content}">
                 <img class="bd-placeholder-img card-img-top" width="100%" height="180"
-                     th:if="${#maps.containsKey(notice, 'file') && notice.file.filetype == 'image'}"
-                     th:src="@{'https://kr.object.ncloudstorage.com/bitcamp-134/notice/' + ${notice.file.filename}}"
-                     th:alt="${notice.file.fileoriginname}">
-                <svg th:unless="${#maps.containsKey(notice, 'file') && notice.file.filetype == 'image'}"
+                     th:if="${!#lists.isEmpty(notice.boardFileDtoList)
+                                && notice.boardFileDtoList[0].filetype == 'image'}"
+                     th:src="@{'https://kr.object.ncloudstorage.com/bitcamp-134/notice/' + ${notice.boardFileDtoList[0].filename}}"
+                     th:alt="${notice.boardFileDtoList[0].filename}">
+                <svg th:unless="${!#lists.isEmpty(notice.boardFileDtoList)
+                                && notice.boardFileDtoList[0].filetype == 'image'}"
                      class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
                 <div class="card-body">
-                    <h5 class="card-title" th:text="${notice.notice.title}">공지사항</h5>
-                    <p class="card-text" th:text="'작성일: ' + ${#temporals.format(notice.notice.regdate, 'yyyy-MM-dd')}"></p>
-                    <a th:href="@{/boards/cnt/{id}?type=notice (id=${notice.notice.id})}" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
+                    <h5 class="card-title" th:text="${notice.title}">공지사항</h5>
+                    <p class="card-text" th:text="'작성일: ' + ${#temporals.format(notice.regdate, 'yyyy-MM-dd')}"></p>
+                    <a th:href="@{/boards/cnt/{id}?type=notice (id=${notice.id})}" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
                 </div>
             </div>
         </div>
         <div class="container mt-3 w-50">
             <form id="search-form" action="/boards/notice-list" method="get">
-                <input type="hidden" name="pageNum" th:value="${page.cri.pageNum}">
-                <input type="hidden" name="amount" th:value="${page.cri.amount}">
-                <input type="hidden" name="endPage" th:value="${page.endPage}">
+                <input type="hidden" name="page" th:value="${noticeList.pageable.pageNumber}">
+                <input type="hidden" name="endPage" th:value="${noticeList.totalPages - 1}">
                 <div class="row d-flex justify-content-center">
                     <div class="col-6">
                         <div class="row">
@@ -134,7 +135,7 @@
 
         <div class="container mt-3 mb-5 w-50 d-flex justify-content-end">
             <button type="button" class="btn btn-outline-secondary"
-                    th:if="${session.loginMember != null && session.loginMember.role == 'ADMIN'}"
+                    th:if="${session.loginMember != null && session.loginMember.role == 'ROLE_ADMIN'}"
                     onclick="location.href='/boards/post'">글 등록</button>
         </div>
     </main>

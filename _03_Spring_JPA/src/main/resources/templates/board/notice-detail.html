@@ -278,7 +278,7 @@
                         </p>
                         <div id="preview" class="mt-3 text-center"
                              data-placeholder="파일을 첨부하려면 파일선택 버튼을 누르세요.">
-                            <div class="upload-file-div" th:each="file : ${fileList}">
+                            <div class="upload-file-div" th:each="file : ${board.boardFileDtoList}">
                                 <input type="hidden" th:id="'fileId' + ${fileStat.index}"
                                        th:value="${file.id}">
                                 <input type="hidden" th:id="'filename' + ${fileStat.index}"

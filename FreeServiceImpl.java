@@ -70,15 +70,15 @@ public class FreeServiceImpl implements BoardService {
         Page<FreeBoard> freeBoardPage = freeBoardRepository.findAll(pageable);
 
         if(searchMap.get("searchKeyword") != null) {
-            if(searchMap.get("serachCondition").toLowerCase().equals("all")) {
+            if(searchMap.get("searchCondition").toLowerCase().equals("all")) {
                 freeBoardPage = freeBoardRepository.findByTitleContainingOrContentContainingOrMemberNicknameContaining(
                         pageable, searchMap.get("searchKeyword"), searchMap.get("searchKeyword"), searchMap.get("searchKeyword")
                 );
-            } else if(searchMap.get("serachCondition").toLowerCase().equals("title")) {
+            } else if(searchMap.get("searchCondition").toLowerCase().equals("title")) {
                 freeBoardPage = freeBoardRepository.findByTitleContaining(pageable, searchMap.get("searchKeyword"));
-            } else if(searchMap.get("serachCondition").toLowerCase().equals("content")) {
+            } else if(searchMap.get("searchCondition").toLowerCase().equals("content")) {
                 freeBoardPage = freeBoardRepository.findByContentContaining(pageable, searchMap.get("searchKeyword"));
-            }  else if(searchMap.get("serachCondition").toLowerCase().equals("writer")) {
+            }  else if(searchMap.get("searchCondition").toLowerCase().equals("writer")) {
                 freeBoardPage = freeBoardRepository.findByMemberNicknameContaining(pageable, searchMap.get("searchKeyword"));
             }
         }
@@ -88,7 +88,8 @@ public class FreeServiceImpl implements BoardService {
 
     @Override
     public BoardDto findById(Long id) {
-        return freeMapper.findById(id);
+        return freeBoardRepository.findById(id).orElseThrow(
+                () -> new RuntimeException("board not exist")).toDto();
     }
 
     @Override
@@ -170,7 +171,12 @@ public class FreeServiceImpl implements BoardService {
 
     @Override
     public void updateBoardCnt(Long id) {
-        freeMapper.updateBoardCnt(id);
+        FreeBoard freeBoard = freeBoardRepository.findById(id).orElseThrow(
+                () -> new RuntimeException("board not exist"));
+
+        freeBoard.setCnt(freeBoard.getCnt() + 1);
+
+        freeBoardRepository.save(freeBoard);
     }
 
     @Override

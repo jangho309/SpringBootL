@@ -4,7 +4,13 @@ import com.bit.springboard.common.FileUtils;
 import com.bit.springboard.dto.BoardDto;
 import com.bit.springboard.dto.BoardFileDto;
 import com.bit.springboard.dto.Criteria;
+import com.bit.springboard.entity.Member;
+import com.bit.springboard.entity.Notice;
+import com.bit.springboard.entity.NoticeFile;
 import com.bit.springboard.mapper.NoticeMapper;
+import com.bit.springboard.repository.MemberRepository;
+import com.bit.springboard.repository.NoticeFileRepository;
+import com.bit.springboard.repository.NoticeRepository;
 import com.bit.springboard.service.BoardService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +29,9 @@ import java.util.*;
 public class NoticeServiceImpl implements BoardService {
     private final NoticeMapper noticeMapper;
     private final FileUtils fileUtils;
+    private final MemberRepository memberRepository;
+    private final NoticeRepository noticeRepository;
+    private final NoticeFileRepository noticeFileRepository;
 
 //    public NoticeServiceImpl(NoticeMapper noticeMapper, FileUtils fileUtils) {
 //        this.noticeMapper = noticeMapper;
@@ -31,41 +40,54 @@ public class NoticeServiceImpl implements BoardService {
 
     @Override
     public BoardDto post(BoardDto boardDto, MultipartFile[] uploadFiles) {
-        List<BoardFileDto> boardFileDtoList = new ArrayList<>();
+        Member writer = memberRepository.findByNickname(boardDto.getNickname())
+                .orElseThrow(() -> new RuntimeException("member not exist"));
+
+        boardDto.setRegdate(LocalDateTime.now());
+        boardDto.setModdate(LocalDateTime.now());
+
+        Notice notice = boardDto.toNoticeEntity(writer);
 
         if(uploadFiles != null && uploadFiles.length > 0) {
             Arrays.stream(uploadFiles).forEach(file -> {
-                if(!file.getOriginalFilename().equals("") && file.getOriginalFilename() != null) {
+                if(file.getOriginalFilename() != null && !file.getOriginalFilename().equals("")) {
                     BoardFileDto boardFileDto = fileUtils.parserFileInfo(file, "notice/");
-
-                    boardFileDtoList.add(boardFileDto);
+                    NoticeFile noticeFile = boardFileDto.toNoticeFileEntity(notice);
+                    notice.getNoticeFileList().add(noticeFile);
                 }
             });
         }
-
-        noticeMapper.post(boardDto);
-
-        if(boardFileDtoList.size() > 0) {
-            boardFileDtoList.forEach(boardFileDto -> boardFileDto.setBoard_id(boardDto.getId()));
-            noticeMapper.postFiles(boardFileDtoList);
-        }
-
-        return noticeMapper.findById(boardDto.getId());
+        return noticeRepository.save(notice).toDto();
     }
 
     @Override
     public Page<BoardDto> findAll(Map<String, String> searchMap, Pageable pageable) {
-        return null;
+        Page<Notice> noticePage = noticeRepository.findAll(pageable);
+
+        if(searchMap.get("searchKeyword") != null) {
+            noticePage = noticeRepository.findByTitleContainingOrContentContainingOrMemberNicknameContaining(
+                    pageable, searchMap.get("searchKeyword"), searchMap.get("searchKeyword"), searchMap.get("searchKeyword")
+            );
+        }
+
+        return noticePage.map(Notice::toDto);
     }
 
     @Override
     public BoardDto findById(Long id) {
-        return noticeMapper.findById(id);
+        return noticeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("notice not exist")).toDto();
     }
 
     @Override
     public List<BoardFileDto> findFilesById(Long id) {
-        return noticeMapper.findFilesById(id);
+        List<NoticeFile> noticeFileList = noticeFileRepository.findByNoticeId(id);
+        List<BoardFileDto> boardFileDtoList = new ArrayList<>();
+
+        noticeFileList.forEach(noticeFile -> {
+           boardFileDtoList.add(noticeFile.toDto());
+        });
+        return boardFileDtoList;
     }
 
     @Override
@@ -123,31 +145,45 @@ public class NoticeServiceImpl implements BoardService {
             });
         }
 
-        boardDto.setModdate(LocalDateTime.now());
-        noticeMapper.modify(boardDto);
+        Notice notice = noticeRepository.findById(boardDto.getId()).orElseThrow(
+                () -> new RuntimeException("notice not exist")
+        );
+
+        notice.setTitle(boardDto.getTitle());
+        notice.setContent(boardDto.getContent());
+        notice.setModdate(LocalDateTime.now());
 
         uFilesList.forEach(boardFileDto -> {
-            if(boardFileDto.getFilestatus().equals("U")){
-                noticeMapper.modifyFile(boardFileDto);
-            } else if(boardFileDto.getFilestatus().equals("D")){
-                noticeMapper.removeFile(boardFileDto);
-            } else if(boardFileDto.getFilestatus().equals("I")){
-                noticeMapper.postFile(boardFileDto);
-            }
+           if(boardFileDto.getFilestatus().equals("U") ||
+            boardFileDto.getFilestatus().equals("I")){
+               notice.getNoticeFileList().add(boardFileDto.toNoticeFileEntity(notice));
+           } else if(boardFileDto.getFilestatus().equals("D")){
+               fileUtils.deleteFile("notice/", boardFileDto.getFilename());
+               noticeFileRepository.delete(boardFileDto.toNoticeFileEntity(notice));
+           }
         });
 
-        return noticeMapper.findById(boardDto.getId());
+        return noticeRepository.save(notice).toDto();
     }
 
     @Override
     public void updateBoardCnt(Long id) {
-        noticeMapper.updateBoardCnt(id);
+        Notice notice = noticeRepository.findById(id).orElseThrow(
+                () -> new RuntimeException("notice not exist")
+        );
+
+        notice.setCnt(notice.getCnt() + 1);
+
+        noticeRepository.save(notice);
     }
 
     @Override
     public void remove(Long id) {
-        noticeMapper.removeFiles(id);
-        noticeMapper.remove(id);
+        List<NoticeFile> noticeFileList = noticeFileRepository.findByNoticeId(id);
+
+        noticeFileList.forEach(noticeFile -> fileUtils.deleteFile("notice/", noticeFile.getFilename()));
+
+        noticeRepository.deleteById(id);
     }
 
     @Override

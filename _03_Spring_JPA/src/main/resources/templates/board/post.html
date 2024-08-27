@@ -146,7 +146,7 @@
         </div>
         <div class="container mt-3 w-50">
             <form id="post-form" action="#">
-                <div class="form-group" th:if="${session.loginMember != null && session.loginMember.role == 'ADMIN'}">
+                <div class="form-group" th:if="${session.loginMember != null && session.loginMember.role == 'ROLE_ADMIN'}">
                     <label for="type">카테고리</label>
                     <select class="form-select" name="type" id="type">
                         <option value="free" selected>자유게시판</option>

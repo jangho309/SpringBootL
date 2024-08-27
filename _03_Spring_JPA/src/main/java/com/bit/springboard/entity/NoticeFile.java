@@ -23,7 +23,7 @@ public class NoticeFile {
             strategy = GenerationType.SEQUENCE,
             generator = "NoticeFileSeqGenerator"
     )
-    private long id;
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name = "board_id")

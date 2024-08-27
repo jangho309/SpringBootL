@@ -60,43 +60,26 @@ public class BoardController {
             mav.setViewName("board/notice-detail");
         }
 
+//        System.out.println(boardService.findById(id));
         mav.addObject("board", boardService.findById(id));
-        mav.addObject("fileList", boardService.findFilesById(id));
+//        mav.addObject("fileList", boardService.findFilesById(id));
 
         return mav;
     }
 
     @GetMapping("/notice-list")
     public ModelAndView noticeListView(@RequestParam Map<String, String> searchMap,
-                                       Criteria cri) {
+                                       @PageableDefault(page = 0, size = 9) Pageable pageable) {
         boardService = applicationContext.getBean("noticeServiceImpl", BoardService.class);
 
         ModelAndView mav = new ModelAndView();
 
-        cri.setAmount(9);
-
         List<Map<String, Object>> noticeList = new ArrayList<>();
 
-//        boardService.findAll(searchMap, cri).forEach(boardDto -> {
-//            Map<String, Object> map = new HashMap<>();
-//
-//            map.put("notice", boardDto);
-//
-//            List<BoardFileDto> noticeFileList = boardService.findFilesById(boardDto.getId());
-//
-//            if(noticeFileList.size() > 0)
-//                map.put("file", noticeFileList.get(0));
-//
-//            noticeList.add(map);
-//        });
-
-//        mav.addObject("noticeList", boardService.findAll(searchMap, cri));
-        mav.addObject("noticeList", noticeList);
+        mav.addObject("noticeList", boardService.findAll(searchMap, pageable));
         mav.addObject("searchMap", searchMap);
 
         int total = boardService.findTotalCnt(searchMap);
-
-        mav.addObject("page", new NoticePageDto(cri, total));
 
         mav.setViewName("board/notice-list");
         return mav;
@@ -223,31 +206,15 @@ public class BoardController {
 
     @PostMapping("/notice-list-ajax")
     public ResponseEntity<?> noticeList(@RequestParam Map<String, String> searchMap,
-                                        Criteria cri){
-        ResponseDto<Map<String, Object>> responseDto = new ResponseDto<>();
+                                        @PageableDefault(page = 0, size = 9) Pageable pageable) {
+        ResponseDto<BoardDto> responseDto = new ResponseDto<>();
 
         try {
             boardService = applicationContext.getBean("noticeServiceImpl", BoardService.class);
 
-            List<Map<String, Object>> noticeList = new ArrayList<>();
-
-//            boardService.findAll(searchMap, cri).forEach(boardDto -> {
-//                List<BoardFileDto> boardFileDtoList = boardService.findFilesById(boardDto.getId());
-//
-//                Map<String, Object> map = new HashMap<>();
-//
-//                map.put("notice", boardDto);
-//
-//                if(boardFileDtoList.size() > 0){
-//                    map.put("file", boardFileDtoList.get(0));
-//                }
-//
-//                noticeList.add(map);
-//            });
-
             responseDto.setStatusCode(200);
             responseDto.setStatusMessage("OK");
-            responseDto.setDataList(noticeList);
+            responseDto.setDataPaging(boardService.findAll(searchMap, pageable));
 
             return ResponseEntity.ok(responseDto);
         } catch(Exception e){
