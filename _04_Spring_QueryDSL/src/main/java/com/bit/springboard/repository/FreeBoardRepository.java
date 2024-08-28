@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 
-public interface FreeBoardRepository extends JpaRepository<FreeBoard, Long> {
+public interface FreeBoardRepository extends JpaRepository<FreeBoard, Long>, FreeBoardRepositoryCustom {
     /**
      *
      * @param title
