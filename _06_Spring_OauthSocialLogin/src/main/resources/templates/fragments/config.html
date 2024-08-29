@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<!-- 모든 Html에 포함될 head 태그 내용을 가지고 있는 Html 파일 -->
+<head th:fragment="config">
+    <meta charset="UTF-8">
+    <title>게시판</title>
+
+    <!-- 모든 페이지에서 공용으로 사용될 css 파일 정의 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+
+    <!-- 특정 페이지에서만 사용할 css 파일 정의 -->
+    <th:block layout:fragment="css">
+        <!-- 특정 페이지에서 추가할 css 파일이나 내부 스타일 시트를 페이지별로
+        th:block 태그를 열어서 추가한다.-->
+        <!-- <link rel="stylesheet th:href="@{css파일}"> -->
+        <!-- <style></style> -->
+    </th:block>
+
+    <!-- 모든 페이지에서 공용으로 사용할 js파일 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script th:src="@{/js/jquery-3.7.1.min.js}"></script>
+
+    <!-- 특정 페이지에서만 사용할 js 추가 -->
+    <th:block layout:fragment="script">
+        <!-- <script></script> -->
+        <!-- <script th:src=@{js파일}/> -->
+    </th:block>
+</head>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{/layouts/layout2}">
+<head>
+    <th:block layout:fragment="script">
+        <script>
+            $(() => {
+                $("#search-icon").on("click", (e) => {
+                   $("input[name='page']").val(0);
+                   $("#search-form").submit();
+                });
+
+                $("input[namge='search']").on("keypress", (e) => {
+                   if(e.key.toLowerCase() === 'enter'){
+                       $("input[name='page']").val(0);
+                   }
+                });
+
+                const zeroDate = (date) => {
+                    return date < 10 ? `0${date}` : date;
+                }
+
+                const makeImg = (file) => {
+                    if(typeof file != 'undefined' && file.filetype === 'image'){
+                        return `<img class="bd-placeholder-img card-img-top" width="100%" height="180"
+                                 src="https://kr.object.ncloudstorage.com/bitcamp-134/notice/${file.filename}"
+                                 alt="${file.fileoriginname}">`;
+                    }
+
+                    return `
+                         <svg class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
+                    `;
+                }
+
+                const localDataTimeToArray = (date) => {
+                    const tempDate = date.split("T")[0];
+
+                    return tempDate.split("-");
+                }
+
+                $(window).on("scroll", (e) => {
+                    const scrollTop = $(window).scrollTop(); // 현재 스크롤의 위치
+                    const windowHeight = window.innerHeight;  // 브라우저의 세로길이(스크롤 길이는 포함되지 않음)
+                    const documentHeight = document.documentElement.scrollHeight; // 웹 문서의 세로 길이(스크롤 길이 포함됨)
+
+                    // console.log("scrollTop : " + scrollTop + ", windowHeight : " + windowHeight + ", documentHeight : " + documentHeight);
+                    const isBottom = documentHeight <= scrollTop + windowHeight;
+
+                    if(isBottom){
+                        if($("input[name='page']").val() >= $("input[name='endPage']").val()){
+                            return;
+                        }
+
+                        $("input[name='page']").val(parseInt($("input[name='page']").val()) + 1);
+
+                        $.ajax({
+                            url: '/boards/notice-list-ajax',
+                            type: 'post',
+                            data : $("#search-form").serialize(),
+                            success: (obj) => {
+                                console.log(obj);
+
+                                let htmlStr = '';
+
+                                for(let i = 0; i < obj.dataPaging.content.length; i++){
+                                    htmlStr += `
+                                        <div class="card" style="width: 18rem;">
+                                            ${makeImg(obj.dataPaging.content[i].boardFileDtoList[0])}
+                                            <div class="card-body">
+                                                <h5 class="card-title">${obj.dataPaging.content[i].title}</h5>
+                                                <p class="card-text">작성일 : ${localDataTimeToArray(obj.dataPaging.content[i].regdate)[0]}-${localDataTimeToArray(obj.dataPaging.content[i].regdate)[1]}-${localDataTimeToArray(obj.dataPaging.content[i].regdate)[2]}</p>
+                                                <a href="/boards/cnt/${obj.dataPaging.content[i].id}?type=notice" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+
+                                $(".card-wrapper").append(htmlStr);
+                            },
+                            error: (err) => {
+                               console.log(err);
+                            }
+                        });
+                    }
+                });
+            });
+        </script>
+    </th:block>
+</head>
+<body>
+    <main layout:fragment="content">
+        <div class="container mt-5 w-75">
+            <h4>공지사항</h4>
+        </div>
+        <div class="container mt-3 mb-5 w-75 card-wrapper">
+            <div class="card" style="width: 18rem;"
+                 th:each="notice : ${noticeList.content}">
+                <img class="bd-placeholder-img card-img-top" width="100%" height="180"
+                     th:if="${!#lists.isEmpty(notice.boardFileDtoList)
+                                && notice.boardFileDtoList[0].filetype == 'image'}"
+                     th:src="@{'https://kr.object.ncloudstorage.com/bitcamp-134/notice/' + ${notice.boardFileDtoList[0].filename}}"
+                     th:alt="${notice.boardFileDtoList[0].filename}">
+                <svg th:unless="${!#lists.isEmpty(notice.boardFileDtoList)
+                                && notice.boardFileDtoList[0].filetype == 'image'}"
+                     class="bd-placeholder-img card-img-top" width="100%" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Image cap" preserveAspectRatio="xMidYMid slice" focusable="false"><title>Placeholder</title><rect width="100%" height="100%" fill="#868e96"></rect></svg>
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${notice.title}">공지사항</h5>
+                    <p class="card-text" th:text="'작성일: ' + ${#temporals.format(notice.regdate, 'yyyy-MM-dd')}"></p>
+                    <a th:href="@{/boards/cnt/{id}?type=notice (id=${notice.id})}" class="btn btn-outline-secondary btn-sm">자세히 보기</a>
+                </div>
+            </div>
+        </div>
+        <div class="container mt-3 w-50">
+            <form id="search-form" action="/boards/notice-list" method="get">
+                <input type="hidden" name="page" th:value="${noticeList.pageable.pageNumber}">
+                <input type="hidden" name="endPage" th:value="${noticeList.totalPages - 1}">
+                <div class="row d-flex justify-content-center">
+                    <div class="col-6">
+                        <div class="row">
+                            <div class="col-11">
+                                <input type="text" class="form-control w-100" name="searchKeyword"
+                                       th:value="${#maps.containsKey(searchMap, 'searchKeyword') ? searchMap.searchKeyword : ''}">
+                            </div>
+                            <div class="col-1 d-flex align-items-center">
+                                <i class="bi bi-search" id="search-icon"></i>
+                                <button type="submit" id="btn-search">검색</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="container mt-3 mb-5 w-50 d-flex justify-content-end">
+            <button type="button" class="btn btn-outline-secondary"
+                    sec:authorize="hasRole('ROLE_ADMIN')"
+                    onclick="location.href='/boards/post'">글 등록</button>
+        </div>
+    </main>
+</body>
+</html>
