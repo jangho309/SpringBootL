@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{/layouts/layout1}">
+<head>
+    <th:block layout:fragment="script">
+        <script>
+            $(() => {
+                $("#search-icon").on("click", (e) => {
+                    $("input[name='page']").val(0);
+                    $("#search-form").submit();
+                });
+
+                $("input[name='searchKeyword']").on("keypress", (e) => {
+                    if(e.key.toLowerCase() === 'enter') {
+                        $("input[name='page']").val(0);
+                    }
+                });
+
+                $(".pagination a").on("click", (e) => {
+                    e.preventDefault();
+
+                    $("input[name='page']").val(e.target.getAttribute("href"));
+
+                    $("#search-form").submit();
+                });
+            });
+        </script>
+    </th:block>
+</head>
+<body>
+    <main layout:fragment="content">
+        <div class="container mt-5 w-50">
+            <h4>자유게시판</h4>
+        </div>
+        <div class="container mt-3 w-50">
+            <form id="search-form" action="/boards/free-list" method="get">
+                <input type="hidden" name="page" th:value="${freeList.pageable.pageNumber}">
+                <div class="row">
+                    <div class="col-3">
+                        <select class="form-select" name="searchCondition">
+                            <option value="all"
+                                    th:selected="${#maps.isEmpty(searchMap)
+                                                    || searchMap.searchCondition == 'all'}">전체</option>
+                            <option value="title"
+                                    th:selected="${!#maps.isEmpty(searchMap)
+                                                    && searchMap.searchCondition == 'title'}">제목</option>
+                            <option value="content"
+                                    th:selected="${!#maps.isEmpty(searchMap)
+                                                    && searchMap.searchCondition == 'content'}">내용</option>
+                            <option value="writer"
+                                    th:selected="${!#maps.isEmpty(searchMap)
+                                                    && searchMap.searchCondition == 'writer'}">작성자</option>
+                        </select>
+                    </div>
+                    <div class="col-9">
+                        <div class="row">
+                            <div class="col-11">
+                                <input type="text" class="form-control w-100" name="searchKeyword"
+                                        th:value="${!#maps.isEmpty(searchMap) ? searchMap.searchKeyword : ''}">
+                            </div>
+                            <div class="col-1 d-flex align-items-center">
+                                <i class="bi bi-search" id="search-icon"></i>
+                                <button type="submit" id="btn-search">검색</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="container mt-3 mb-5 w-50">
+            <table class="table table-hover text-center">
+                <thead>
+                    <tr>
+                        <th>번호</th>
+                        <th>제목</th>
+                        <th>작성자</th>
+                        <th>등록일</th>
+                        <th>조회수</th>
+                    </tr>
+                </thead>
+                <tbody class="table-group-divider">
+                    <tr class="board-tr" th:each="free : ${freeList.content}" th:onclick="'location.href=\'/boards/' + ${free.id} + '?type=free\''">
+                        <td th:text="${free.id}"></td>
+                        <td>
+                            <a th:text="${free.title}"
+                                th:href="@{/boards/cnt/{id}?type=free (id=${free.id})}"></a>
+                        </td>
+                        <td th:text="${free.nickname}"></td>
+                        <td th:text="${#temporals.format(free.regdate, 'yyyy-MM-dd')}"></td>
+                        <td th:text="${free.cnt}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center" th:if="${freeList.totalElements > 0}"
+                th:with="pageNumber = ${freeList.pageable.pageNumber},
+                         pageSize = ${freeList.pageable.pageSize},
+                         totalPages = ${freeList.totalPages},
+                         startPage = ${T(java.lang.Math).floor(pageNumber / pageSize) * pageSize + 1},
+                         tempEndPage = ${startPage + pageSize - 1},
+                         endPage = ${tempEndPage > totalPages ? totalPages : tempEndPage}"
+            >
+                <li class="page-item" th:if="${pageNumber > 0}">
+                    <a class="page-link link-secondary" aria-label="Previous"
+                        th:href="${pageNumber - 1}">
+                        &laquo;
+                    </a>
+                </li>
+
+                <li class="page-item" th:each="pageNo : ${#numbers.sequence(startPage, endPage)}">
+                    <a class="page-link link-secondary"
+                        th:text="${pageNo}"
+                        th:href="${pageNo - 1}"></a>
+                </li>
+
+                <li class="page-item" th:if="${pageNumber < totalPages - 1}">
+                    <a class="page-link link-secondary" aria-label="Next"
+                        th:href="${pageNumber + 1}">
+                        &raquo;
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="container mt-3 mb-5 w-50 d-flex justify-content-end">
+            <button type="button" class="btn btn-outline-secondary" onclick="location.href='/boards/post'">글 등록</button>
+        </div>
+    </main>
+</body>
+</html>
